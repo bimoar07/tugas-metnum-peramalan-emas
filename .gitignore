@@ -1,0 +1,10 @@
+# Binaries & build artifacts
+model_emas
+*.o
+*.out
+
+# Python & editor lock files
+__pycache__/
+*.pyc
+.~lock.*#
+*~

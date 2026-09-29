@@ -1,0 +1,6 @@
+{
+  "min_price": 2488000,
+  "max_price": 3168000,
+  "train_rows": 243,
+  "test_rows": 28
+}
