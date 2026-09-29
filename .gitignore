@@ -1,5 +1,7 @@
 # Binaries & build artifacts
 model_emas
+model_linear
+model_nn
 *.o
 *.out
 

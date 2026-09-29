@@ -1,0 +1,205 @@
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <vector>
+#include <string>
+#include <cmath>
+
+using namespace std;
+
+// ============================================================================
+// KONSTANTA & HIPERPARAMETER
+// ============================================================================
+#define lr 0.0001     // learning rate disesuaikan untuk optimasi 16 parameter
+#define h 1.e-10      // step finite difference sesuai materi
+#define tol 1.e-5     // toleransi norma gradien
+
+// ============================================================================
+// DATA GLOBAL & PARAMETER MODEL NEURAL NET (SESUAI CATATAN DOSEN)
+// ============================================================================
+vector<vector<double>> train_data; 
+vector<double> test_actual;
+vector<double> train_raw;
+
+double min_price, max_price;
+
+// 12 Bobot (w[1] s.d. w[12]) dan 4 Bias (b[1] s.d. b[4])
+// Menggunakan array 1-indexed agar persis nomor di catatanmu
+double w[13];
+double b[5];
+
+// Gradien numerik
+double dEw[13];
+double dEb[5];
+
+double norm(double p)   { return (p - min_price) / (max_price - min_price); }
+double denorm(double p) { return p * (max_price - min_price) + min_price; }
+
+// ============================================================================
+// SETUP I/O (DISEDIAKAN AGENT)
+// ============================================================================
+vector<double> read_price_csv(const string& filename) {
+    vector<double> prices;
+    ifstream file(filename);
+    string line;
+    getline(file, line);
+    while (getline(file, line)) {
+        if (line.empty()) continue;
+        stringstream ss(line);
+        string idx, date, day, price_str;
+        getline(ss, idx, ',');
+        getline(ss, date, ',');
+        getline(ss, day, ',');
+        getline(ss, price_str, ',');
+        prices.push_back(stod(price_str));
+    }
+    return prices;
+}
+
+// Inisialisasi awal bobot dan bias dengan nilai kecil
+void init_parameters() {
+    for (int i = 1; i <= 12; ++i) {
+        w[i] = 0.1 * ((i % 3) + 1);
+        dEw[i] = 1.0;
+    }
+    for (int i = 1; i <= 4; ++i) {
+        b[i] = 0.1;
+        dEb[i] = 1.0;
+    }
+}
+
+// ============================================================================
+// LOGIKA INTI ALGORITMA NEURAL NETWORK (UNTUK DIKODING SENDIRI OLEH BIMO)
+// ============================================================================
+
+// 1. Fungsi Forward Neural Network (Input 3 hari -> z1,z2,z3 -> y_hat)
+double forward_nn(double u1, double u2, double u3) {
+    // TODO [BIMO]:
+    // Hitung z1, z2, z3 sesuai catatan:
+    // z1 = w[1]*u1 + w[4]*u2 + w[7]*u3 + b[1]
+    // z2 = w[2]*u1 + w[5]*u2 + w[8]*u3 + b[2]
+    // z3 = w[3]*u1 + w[6]*u2 + w[9]*u3 + b[3]
+    //
+    // Hitung output y_hat:
+    // y_hat = w[10]*z1 + w[11]*z2 + w[12]*z3 + b[4]
+    return 0.0;
+}
+
+double y_(int i) {
+    // Memanggil forward_nn dengan 3 input hari sebelumnya
+    return forward_nn(train_data[i][0], train_data[i][1], train_data[i][2]);
+}
+
+// 2. Fungsi Objektif / Error (SSE)
+double E() {
+    // TODO [BIMO]: Tulis akumulasi galat kuadrat (SSE) dari train_data
+    return 0.0;
+}
+
+// 3. Perhitungan Turunan Parsial via Central Finite Difference (16 Parameter)
+void grad() {
+    // TODO [BIMO]:
+    // Hitung turunan terpusat (E(p+h) - E(p-h))/(2*h) untuk:
+    // 1. Seluruh bobot w[1] s.d. w[12] -> simpan ke dEw[k]
+    // 2. Seluruh bias b[1] s.d. b[4]   -> simpan ke dEb[k]
+}
+
+// ============================================================================
+// MAIN RUNNER
+// ============================================================================
+int main() {
+    // 1. Setup Data
+    train_raw   = read_price_csv("train_jan_agu_2026.csv");
+    test_actual = read_price_csv("test_sep_2026.csv");
+
+    if (train_raw.empty() || test_actual.empty()) {
+        cerr << "Error: File CSV tidak ditemukan!\n";
+        return 1;
+    }
+
+    min_price = train_raw[0];
+    max_price = train_raw[0];
+    for (double p : train_raw) {
+        if (p < min_price) min_price = p;
+        if (p > max_price) max_price = p;
+    }
+
+    for (size_t i = 3; i < train_raw.size(); ++i) {
+        train_data.push_back({
+            norm(train_raw[i - 3]),
+            norm(train_raw[i - 2]),
+            norm(train_raw[i - 1]),
+            norm(train_raw[i])
+        });
+    }
+
+    init_parameters();
+
+    ofstream loss_out("history_loss_nn.csv");
+    loss_out << "iteration,loss,grad_norm\n";
+
+    // 2. Loop Pelatihan Gradient Descent
+    int count = 0;
+    int max_iter = 3000;
+
+    cout << "Memulai training Neural Network (16 parameter)...\n";
+
+    auto calc_gnorm = [&]() {
+        double sq = 0.0;
+        for (int i = 1; i <= 12; ++i) sq += pow(dEw[i], 2);
+        for (int i = 1; i <= 4; ++i)  sq += pow(dEb[i], 2);
+        return sqrt(sq);
+    };
+
+    while (calc_gnorm() > tol && count < max_iter) {
+        count++;
+        grad();
+
+        // TODO [BIMO]: Tulis aturan pembaruan bobot dan bias dengan Gradient Descent:
+        // w[k] = w[k] - dEw[k] * lr
+        // b[k] = b[k] - dEb[k] * lr
+
+        double current_loss = E();
+        double g_norm = calc_gnorm();
+        loss_out << count << "," << current_loss << "," << g_norm << "\n";
+
+        if (count % 200 == 0 || count == 1) {
+            cout << "Iter: " << count << " | Loss: " << current_loss << " | |Grad|: " << g_norm << endl;
+        }
+    }
+    loss_out.close();
+
+    cout << "Selesai training NN! E=" << E() << endl;
+
+    // 3. Evaluasi Peramalan September
+    ofstream pred_out("predictions_sep_nn.csv");
+    pred_out << "date,day_name,actual_price_idr,pred_walkforward_idr,pred_rollout_idr\n";
+
+    vector<double> full_norm;
+    for (double p : train_raw) full_norm.push_back(norm(p));
+    for (double p : test_actual) full_norm.push_back(norm(p));
+
+    double r1 = norm(train_raw[train_raw.size() - 3]);
+    double r2 = norm(train_raw[train_raw.size() - 2]);
+    double r3 = norm(train_raw[train_raw.size() - 1]);
+
+    for (size_t i = 0; i < test_actual.size(); ++i) {
+        // Walk-Forward (1-step-ahead dari data riil)
+        size_t idx = train_raw.size() + i;
+        double wf_norm = forward_nn(full_norm[idx - 3], full_norm[idx - 2], full_norm[idx - 1]);
+
+        // TODO [BIMO]: Closed-Loop Rollout menggunakan forward_nn:
+        // 1. double ro_norm = forward_nn(r1, r2, r3);
+        // 2. Geser jendela: r1 <- r2, r2 <- r3, r3 <- ro_norm
+        double ro_norm = 0.0;
+
+        pred_out << "2026-09-" << (i + 1 < 10 ? "0" : "") << (i + 1) << ",Day,"
+                 << (long long)test_actual[i] << ","
+                 << (long long)denorm(wf_norm) << ","
+                 << (long long)denorm(ro_norm) << "\n";
+    }
+    pred_out.close();
+
+    cout << "Hasil tersimpan di predictions_sep_nn.csv dan history_loss_nn.csv\n";
+    return 0;
+}

@@ -1,7 +1,7 @@
 # Tugas 2: Peramalan Harga Emas Antam (Regresi Multivariabel)
 **Mata Kuliah:** Metode Numerik (PACS262309) — FMIPA  
 **Dosen Pengampu:** Faizal Makhrus, S.Kom., M.Sc., Ph.D.  
-**Metode:** Regresi Multivariabel Autoregressive (AR(3)) & Multi-Layer Perceptron (MLP) dengan optimasi *Gradient Descent* dan turunan numerik *Central Finite Difference* ($h = 10^{-10}$).
+**Metode:** Regresi Multivariabel Autoregressive (AR(3)) & Linear Neural Network (16 parameter) dengan optimasi *Gradient Descent* dan turunan numerik *Central Finite Difference* ($h = 10^{-10}$).
 
 ---
 
@@ -14,7 +14,8 @@ tugas-metnum-peramalan-emas/
 ├── test_sep_2026.csv              # Data Uji (September 2026, s.d. saat ini 28 hari)
 ├── full_jan_sep_2026.csv          # Dataset gabungan Januari - September 2026
 ├── normalization_params.json      # Parameter Min-Max (dihitung HANYA dari data latih)
-├── main.cpp                       # Kode C++ tunggal (Linear AR(3) & MLP)
+├── linear.cpp                     # Implementasi Model Linear AR(3) (4 parameter)
+├── nn.cpp                         # Implementasi Linear Neural Network (16 parameter)
 ├── notebook_peramalan_emas.ipynb  # Jupyter Notebook untuk Google Colab & visualisasi
 └── README.md                      # Dokumentasi & panduan eksekusi
 ```
@@ -23,58 +24,28 @@ tugas-metnum-peramalan-emas/
 
 ## 🚀 Cara Menjalankan
 
-### 1. Eksekusi Program C++ (Lokal / Terminal)
-Kompilasi dengan optimasi `-O3`:
+### 1. Model Linear AR(3) (`linear.cpp`)
 ```bash
-g++ -O3 main.cpp -o model_emas
+g++ -O3 linear.cpp -o model_linear
+./model_linear
 ```
 
-Jalankan Model Linear AR(3):
+### 2. Model Neural Network (`nn.cpp`)
 ```bash
-./model_emas linear 0.0005 3000
+g++ -O3 nn.cpp -o model_nn
+./model_nn
 ```
-- Argumen: `[model] [learning_rate] [max_iterations]`
-- Default: `model=linear`, `lr=0.0005`, `max_iter=3000`
-
-Jalankan Model Neural Network (MLP 3-4-1):
-```bash
-./model_emas mlp 0.0001 2000
-```
-
-Program akan menghasilkan file luaran CSV:
-- `history_loss_linear.csv` / `history_loss_mlp.csv` (jejak iterasi loss & gradien)
-- `predictions_sep_linear.csv` / `predictions_sep_mlp.csv` (perbandingan harga aktual vs prediksi)
 
 ---
 
-### 2. Eksekusi di Google Colab
-1. Upload folder ini ke repositori GitHub pribadimu (misal `github.com/bimoar07/tugas-metnum-peramalan-emas`).
-2. Buka file `notebook_peramalan_emas.ipynb` di Google Colab.
-3. Jalankan sel berurutan. Notebook akan secara otomatis:
-   - Me-`git clone` repositori.
-   - Mengompilasi program C++ via shell.
-   - Menjalankan model Linear dan MLP.
-   - Menampilkan grafik historis deret waktu, kurva konvergensi fungsi loss, plot perbandingan peramalan September, serta tabel metrik RMSE dan MAPE.
+## 🧠 Struktur Model Neural Network (`nn.cpp`)
 
----
-
-### 3. Pembaruan Data di Akhir Bulan (30 September 2026)
-Pada tanggal 30 September nanti, jalankan perintah satu baris berikut untuk memperbarui data September menjadi 30 hari penuh secara otomatis:
-```bash
-python3 fetch_data.py
-```
-Script akan langsung mengunduh data terbaru dari API resmi Logam Mulia dan menyinkronkan file CSV terkait.
-
----
-
-## 🧠 Pembagian Bagian Kode di `main.cpp`
-
-Di dalam file `main.cpp`, kode dibagi secara terstruktur:
-1. **Scaffolding I/O (Oleh Agent):** Penanganan parsing CSV, pembuatan sliding window 3-hari, normalisasi Min-Max, serta fungsi prediksi *Walk-Forward* (1-step-ahead).
-2. **Logika Inti Algoritma (Oleh Bimo):**
-   - `compute_loss()`: Perhitungan fungsi objektif galat kuadrat ($SSE = \sum (y - \hat{y})^2$).
-   - `compute_gradients()`: Turunan parsial numerik dengan *Central Finite Difference*:
-     $$\frac{\partial E}{\partial p} \approx \frac{E(p + h) - E(p - h)}{2h}, \quad h = 10^{-10}$$
-   - `train()`: Pembaruan parameter via *Gradient Descent*:
-     $$p \leftarrow p - \alpha \cdot \frac{\partial E}{\partial p}$$
-   - `predict_rollout()`: Peramalan otonom rekursif 30 hari penuh di bulan September tanpa bocoran data riil masa depan.
+Sesuai catatan materi:
+- **Input:** $u_1, u_2, u_3$ (harga 3 hari sebelumnya)
+- **Hidden Layer:**
+  $$z_1 = w_1 u_1 + w_4 u_2 + w_7 u_3 + b_1$$
+  $$z_2 = w_2 u_1 + w_5 u_2 + w_8 u_3 + b_2$$
+  $$z_3 = w_3 u_1 + w_6 u_2 + w_9 u_3 + b_3$$
+- **Output Layer:**
+  $$\hat{y} = w_{10} z_1 + w_{11} z_2 + w_{12} z_3 + b_4$$
+- **Optimasi:** Central Finite Difference ($h = 10^{-10}$) untuk 12 bobot ($w_1 \dots w_{12}$) dan 4 bias ($b_1 \dots b_4$).
