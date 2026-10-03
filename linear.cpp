@@ -7,32 +7,22 @@
 
 using namespace std;
 
-// ============================================================================
-// KONSTANTA & HIPERPARAMETER
-// ============================================================================
 #define lr 0.0005
 #define h 1.e-10
 #define tol 1.e-5
 
-// ============================================================================
-// DATA GLOBAL & PARAMETER MODEL
-// ============================================================================
 vector<vector<double>> train_data; 
 vector<double> test_actual;
 vector<double> train_raw;
 
 double min_price, max_price;
 
-// Parameter model regresi
 double a1 = 0.1, a2 = 0.1, a3 = 0.1, b = 0.1;
 double dEa1 = 1.0, dEa2 = 1.0, dEa3 = 1.0, dEb = 1.0;
 
 double norm(double p)   { return (p - min_price) / (max_price - min_price); }
 double denorm(double p) { return p * (max_price - min_price) + min_price; }
 
-// ============================================================================
-// SETUP I/O (DISEDIAKAN AGENT)
-// ============================================================================
 vector<double> read_price_csv(const string& filename) {
     vector<double> prices;
     ifstream file(filename);
@@ -51,72 +41,57 @@ vector<double> read_price_csv(const string& filename) {
     return prices;
 }
 
-// ============================================================================
-// LOGIKA INTI ALGORITMA (UNTUK DIKODING SENDIRI OLEH BIMO)
-// ============================================================================
-
-// 1. Fungsi Model (Prediksi harga hari ke-i dari 3 hari sebelumnya)
 double y_(int i) {
-    // TODO [BIMO]: Tulis persamaan model di sini
     return a1 * train_data[i][0] + a2 * train_data[i][1] + a3 * train_data[i][2] + b;
 }
 
-// 2. Fungsi Objektif / Error (SSE)
 double E() {
-    // TODO [BIMO]: Tulis perhitungan galat kuadrat (SSE) di sini
     double galat = 0.0;
     int indeks = 0;
-    for(vector<double>& nilai : train_data){
-
-      galat += pow(nilai[3] - y_(indeks), 2);
-      indeks++;
+    for (vector<double>& nilai : train_data) {
+        galat += pow(nilai[3] - y_(indeks), 2);
+        indeks++;
     }
     return galat;
 }
 
-// 3. Perhitungan Turunan Parsial via Central Finite Difference
 void grad() {
-    // TODO [BIMO]: Hitung dEa1, dEa2, dEa3, dEb dengan rumus (E(p+h) - E(p-h)) / (2*h)
     double temp = a1;
     double a, bb;
 
     a1 += h;
     a = E();
-    a1 -= 2*h;
+    a1 -= 2 * h;
     bb = E();
-    dEa1 = (a - bb)/(2*h);
+    dEa1 = (a - bb) / (2 * h);
     a1 = temp;
 
     temp = a2;
     a2 += h;
     a = E();
-    a2 -= 2*h;
+    a2 -= 2 * h;
     bb = E();
-    dEa2 = (a - bb)/(2*h);
+    dEa2 = (a - bb) / (2 * h);
     a2 = temp;
 
     temp = a3;
     a3 += h;
     a = E();
-    a3 -= 2*h;
+    a3 -= 2 * h;
     bb = E();
-    dEa3 = (a - bb)/(2*h);
+    dEa3 = (a - bb) / (2 * h);
     a3 = temp;
     
     temp = b;
     b += h;
     a = E();
-    b -= 2*h;
+    b -= 2 * h;
     bb = E();
-    dEb = (a - bb)/(2*h);
+    dEb = (a - bb) / (2 * h);
     b = temp;
 }
 
-// ============================================================================
-// MAIN RUNNER & EVALUASI
-// ============================================================================
 int main() {
-    // 1. Setup Dataset
     train_raw   = read_price_csv("train_jan_agu_2026.csv");
     test_actual = read_price_csv("test_sep_2026.csv");
 
@@ -144,28 +119,21 @@ int main() {
     ofstream loss_out("history_loss_linear.csv");
     loss_out << "iteration,loss,grad_norm\n";
 
-    // 2. Loop Pelatihan Gradient Descent
     int count = 0;
     int max_iter = 3000;
 
     cout << "Memulai training...\n";
-    while (sqrt(pow(dEa1,2) + pow(dEa2,2) + pow(dEa3,2) + pow(dEb,2)) > tol && count < max_iter) {
+    while (sqrt(pow(dEa1, 2) + pow(dEa2, 2) + pow(dEa3, 2) + pow(dEb, 2)) > tol && count < max_iter) {
         count++;
         grad();
 
-        // TODO [BIMO]: Tulis aturan pembaruan parameter gradient descent di sini
-        // a1 = ...
-        // a2 = ...
-        // a3 = ...
-        // b  = ...
         a1 -= dEa1 * lr;
         a2 -= dEa2 * lr;
         a3 -= dEa3 * lr;
         b -= dEb * lr;
 
-
         double current_loss = E();
-        double g_norm = sqrt(pow(dEa1,2) + pow(dEa2,2) + pow(dEa3,2) + pow(dEb,2));
+        double g_norm = sqrt(pow(dEa1, 2) + pow(dEa2, 2) + pow(dEa3, 2) + pow(dEb, 2));
         loss_out << count << "," << current_loss << "," << g_norm << "\n";
 
         if (count % 200 == 0 || count == 1) {
@@ -176,7 +144,6 @@ int main() {
 
     cout << "Selesai! a1=" << a1 << " a2=" << a2 << " a3=" << a3 << " b=" << b << " E=" << E() << endl;
 
-    // 3. Evaluasi Peramalan September
     ofstream pred_out("predictions_sep_linear.csv");
     pred_out << "date,day_name,actual_price_idr,pred_walkforward_idr,pred_rollout_idr\n";
 
@@ -184,20 +151,14 @@ int main() {
     for (double p : train_raw) full_norm.push_back(norm(p));
     for (double p : test_actual) full_norm.push_back(norm(p));
 
-    // Input awal rollout (3 hari terakhir Agustus)
     double r1 = norm(train_raw[train_raw.size() - 3]);
     double r2 = norm(train_raw[train_raw.size() - 2]);
     double r3 = norm(train_raw[train_raw.size() - 1]);
 
     for (size_t i = 0; i < test_actual.size(); ++i) {
-        // Walk-Forward (1-step-ahead dari data riil)
         size_t idx = train_raw.size() + i;
         double wf_norm = a1 * full_norm[idx - 3] + a2 * full_norm[idx - 2] + a3 * full_norm[idx - 1] + b;
 
-        // TODO [BIMO]: Tulis logika Closed-Loop Rollout di sini:
-        // 1. Hitung prediksi ro_norm dari (r1, r2, r3)
-        // 2. Geser jendela: r1 <- r2, r2 <- r3, r3 <- ro_norm
-        
         double ro_norm = a1 * r1 + a2 * r2 + a3 * r3 + b; 
         r1 = r2, r2 = r3, r3 = ro_norm;
 

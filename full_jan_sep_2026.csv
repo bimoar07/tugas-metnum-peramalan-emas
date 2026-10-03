@@ -270,3 +270,5 @@ day_index,date,day_name,price_idr,source
 269,2026-09-26,Saturday,2590000,Antam Official (API)
 270,2026-09-27,Sunday,2613000,Antam Official (API)
 271,2026-09-28,Monday,2613000,Antam Official (API)
+272,2026-09-29,Tuesday,2597000,Antam Official (API)
+273,2026-09-30,Wednesday,2580000,Antam Official (API)

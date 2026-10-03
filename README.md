@@ -11,7 +11,7 @@
 tugas-metnum-peramalan-emas/
 ├── fetch_data.py                  # Script otomatisasi pengambil data API Antam
 ├── train_jan_agu_2026.csv         # Data Latih (Januari - Agustus 2026, 243 hari)
-├── test_sep_2026.csv              # Data Uji (September 2026, s.d. saat ini 28 hari)
+├── test_sep_2026.csv              # Data Uji (September 2026, penuh 30 hari)
 ├── full_jan_sep_2026.csv          # Dataset gabungan Januari - September 2026
 ├── normalization_params.json      # Parameter Min-Max (dihitung HANYA dari data latih)
 ├── linear.cpp                     # Implementasi Model Linear AR(3) (4 parameter)
